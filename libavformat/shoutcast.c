@@ -49,6 +49,7 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     hints.ai_socktype = SOCK_STREAM;
     snprintf(portstr, sizeof(portstr), "%d", port);
 
+    av_log(h, AV_LOG_ERROR, "shoutcast\n");
     int ret = getaddrinfo(hostname, portstr, &hints, &ai);
     if(ret)
     {
@@ -64,7 +65,10 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     {
         ret = wait_fd(fd, WRITABLE);
         if(ret <=0)
+        {
+            av_log(h, AV_LOG_ERROR, "cannot get writable fd\n");
             goto fail_after_connect;
+        }
     }
 
     /* check ICY header */
@@ -75,7 +79,6 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
         av_log(h, AV_LOG_ERROR, "sent http request failure\n");
         goto fail_after_connect;
     }
-
 
     char buf[1024];
     wait_fd(fd, READABLE);
@@ -103,7 +106,7 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
         }
     }
 
-    if(skip_bytes < 0)
+    if(skip_bytes <= 0)
     {
         struct ICYContext* ctx = (struct ICYContext*) av_malloc(sizeof(struct ICYContext));
         ctx->fd = fd;
