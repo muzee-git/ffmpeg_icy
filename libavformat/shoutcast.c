@@ -47,12 +47,12 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    snprintf(portstr, sizeof(portstr), "%d", port);
+    snprintf(portstr, sizeof(portstr), "%d", port == -1 ? 80 : port);
 
-    av_log(h, AV_LOG_ERROR, "shoutcast\n");
     int ret = getaddrinfo(hostname, portstr, &hints, &ai);
     if(ret)
     {
+        av_log(h, AV_LOG_ERROR, "Failed to resolve hostname %s:%s (err: %d)\n", hostname, portstr, ret);
         return -1;
     }
 
@@ -83,6 +83,9 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     char buf[1024];
     wait_fd(fd, READABLE);
     ret = recv(fd, buf, 4, 0);
+    buf[4] = '\0';
+    av_log(h, AV_LOG_INFO, "first chars >>>%s<<<\n", buf);
+
     if(ret < 0)
     {
         av_log(h, AV_LOG_ERROR, "read http response failure\n");
