@@ -146,6 +146,9 @@ static int shoutcast_read(URLContext *h, uint8_t *buf, int size)
 static int shoutcast_close(URLContext *h)
 {
     struct ICYContext* ctx = h->priv_data;
+    int fd = ctx->fd;
+    if(fd > 0)
+        closesocket(fd);
     av_free(ctx);
     return 0;
 }
