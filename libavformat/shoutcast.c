@@ -80,7 +80,7 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
         goto fail_after_connect;
     }
 
-    char buf[1024];
+    char buf[128];
     wait_fd(fd, READABLE);
     ret = recv(fd, buf, 4, 0);
     buf[4] = '\0';
@@ -100,7 +100,13 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
         while(skip_bytes >0)
         {
             wait_fd(fd, READABLE);
-            ret = recv(fd, buf, 1024, 0);
+            ret = recv(fd, buf, 128, 0);
+            if(strnstr(buf, "\r\n\r\n", 128) != NULL)
+            {
+                av_log(h, AV_LOG_INFO, "ICY headers skipped.\n");
+                skip_bytes = 0;
+                break ;
+            }
             if(ret < 0)
             {
                 break;
