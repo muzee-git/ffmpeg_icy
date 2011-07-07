@@ -23,6 +23,10 @@ static int wait_fd(int fd, int can_write)
     int timeout = 50, ret = 0;
     struct pollfd p = {fd, can_write == WRITABLE ? POLLOUT : POLLIN, 0};
     while(timeout--) {
+        if (url_interrupt_cb()) 
+        {
+            return -1;
+        }
         ret = poll(&p, 1, 100);
         if (ret > 0)
             break;
@@ -81,7 +85,11 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     }
 
     char buf[128];
-    wait_fd(fd, READABLE);
+    ret = wait_fd(fd, READABLE);
+    if(ret <=0)
+    {
+        goto fail_after_connect;
+    }
     ret = recv(fd, buf, 4, 0);
     buf[4] = '\0';
     av_log(h, AV_LOG_INFO, "first chars >>>%s<<<\n", buf);
@@ -99,7 +107,11 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     {
         while(skip_bytes >0)
         {
-            wait_fd(fd, READABLE);
+            ret = wait_fd(fd, READABLE);
+            if(ret <=0)
+            {
+                goto fail_after_connect;
+            }
             ret = recv(fd, buf, 128, 0);
             if(strnstr(buf, "\r\n\r\n", 128) != NULL)
             {
@@ -133,13 +145,14 @@ fail_after_connect:
 
 static int shoutcast_read(URLContext *h, uint8_t *buf, int size)
 {
-
     struct ICYContext* ctx = h->priv_data;
     int fd = ctx->fd;
-
-    wait_fd(fd, READABLE);
-    int ret = recv(fd, buf, size, 0);
-
+    int ret = wait_fd(fd, READABLE);
+    if(ret <=0)
+    {
+        return -1;
+    }
+    ret = recv(fd, buf, size, 0);
     return ret;
 }
 
