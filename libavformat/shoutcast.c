@@ -3,6 +3,7 @@
 #include "internal.h"
 #include "avio_internal.h"
 #include "os_support.h"
+#include "libavutil/avstring.h"
 
 #include <poll.h>
 #include <unistd.h>
@@ -113,7 +114,7 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
                 goto fail_after_connect;
             }
             ret = recv(fd, buf, 128, 0);
-            if(strnstr(buf, "\r\n\r\n", 128) != NULL)
+            if(av_stristr(buf, "\r\n\r\n") != NULL)
             {
                 av_log(h, AV_LOG_INFO, "ICY headers skipped.\n");
                 skip_bytes = 0;
