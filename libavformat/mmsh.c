@@ -29,6 +29,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "internal.h"
+#include "mms_plus.h"
 #include "mms.h"
 #include "asf.h"
 #include "http.h"
@@ -218,6 +219,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     char headers[1024];
     MMSHContext *mmsh;
     MMSContext *mms;
+    int select_index_enable;
 
     mmsh = h->priv_data = av_mallocz(sizeof(MMSHContext));
     if (!h->priv_data)
@@ -266,13 +268,38 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     stream_selection = av_mallocz(mms->stream_num * 19 + 1);
     if (!stream_selection)
         return AVERROR(ENOMEM);
-    for (i = 0; i < mms->stream_num; i++) {
+
+    av_log(NULL, AV_LOG_WARNING,"select video index: %d\n", mms_plus_video_index());
+    av_log(NULL, AV_LOG_WARNING,"select audio index: %d\n", mms_plus_audio_index());
+
+    select_index_enable = mms_plus_video_index() >=0 && mms_plus_audio_index() >= 0;
+    av_log(NULL, AV_LOG_INFO,"enable stream selection: %d\n", select_index_enable);
+
+    if(select_index_enable) {
         char tmp[20];
-        err = snprintf(tmp, sizeof(tmp), "ffff:%d:0 ", mms->streams[i].id);
+
+        /* select video index */
+        err = snprintf(tmp, sizeof(tmp), "ffff:%d:0 ", mms->streams[mms_plus_video_index()].id);
+        if (err < 0)
+            goto fail;
+        av_strlcat(stream_selection, tmp, mms->stream_num * 19 + 1);
+
+        /* select audio index */
+        err = snprintf(tmp, sizeof(tmp), "ffff:%d:0 ", mms->streams[mms_plus_audio_index()].id);
         if (err < 0)
             goto fail;
         av_strlcat(stream_selection, tmp, mms->stream_num * 19 + 1);
     }
+    else {
+        for (i = 0; i < mms->stream_num; i++) {
+            char tmp[20];
+            err = snprintf(tmp, sizeof(tmp), "ffff:%d:0 ", mms->streams[i].id);
+            if (err < 0)
+                goto fail;
+            av_strlcat(stream_selection, tmp, mms->stream_num * 19 + 1);
+        }
+    }
+
     // send play request
     err = snprintf(headers, sizeof(headers),
                    "Accept: */*\r\n"
@@ -284,12 +311,13 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
                    "Pragma: stream-switch-count=%d\r\n"
                    "Pragma: stream-switch-entry=%s\r\n"
                    "Connection: Close\r\n",
-                   host, port, mmsh->request_seq++, mms->stream_num, stream_selection);
+                   host, port, mmsh->request_seq++, select_index_enable ? 2 : mms->stream_num, stream_selection);
     av_freep(&stream_selection);
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Build play request failed!\n");
         goto fail;
     }
+
     av_dlog(NULL, "out_buffer is %s", headers);
     ff_http_set_headers(mms->mms_hd, headers);
 
