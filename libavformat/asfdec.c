@@ -507,35 +507,50 @@ static int asf_read_language_list(AVFormatContext *s, int64_t size)
     return 0;
 }
 
+
 static int asf_read_metadata(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
     int n, stream_num, name_len, value_len, value_num;
+    int value_type;
     int ret, i;
     n = avio_rl16(pb);
-
+    
     for(i=0;i<n;i++) {
         char name[1024];
-
+        
         avio_rl16(pb); //lang_list_index
         stream_num= avio_rl16(pb);
         name_len=   avio_rl16(pb);
-        avio_skip(pb, 2); /* value_type */
-        value_len=  avio_rl32(pb);
 
+        /* 0 unicode, 1 bytes, 2 bool */
+        value_type = avio_rl16(pb); 
+        value_len=  avio_rl32(pb);
+        
         if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
             avio_skip(pb, name_len - ret);
-        //av_log(s, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
-        value_num= avio_rl16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
-        avio_skip(pb, value_len - 2);
-
+        
+        if(value_type != 0)
+        {
+            value_num= avio_rl16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
+            avio_skip(pb, value_len - 2);
+        }
+        else
+        {
+            char value_str[1024];
+            avio_get_str16le(pb, value_len, value_str, sizeof(value_str));
+            av_log(s, AV_LOG_WARNING, "%s=%s\n", name, value_str);
+        }
+        
         if(stream_num<128){
             if     (!strcmp(name, "AspectRatioX")) asf->dar[stream_num].num= value_num;
             else if(!strcmp(name, "AspectRatioY")) asf->dar[stream_num].den= value_num;
         }
+        
+        
     }
-
+    
     return 0;
 }
 
