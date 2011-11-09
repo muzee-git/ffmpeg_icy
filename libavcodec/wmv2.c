@@ -85,6 +85,12 @@ void ff_mspel_motion(MpegEncContext *s,
     src_x = s->mb_x * 16 + (motion_x >> 1);
     src_y = s->mb_y * 16 + (motion_y >> 1);
 
+    if(dxy < 0)
+    {
+        av_log(s->avctx, AV_LOG_ERROR, "MUPLAYER-WILL-DIE: bad dxy index\n");
+        return ;
+    }
+
     /* WARNING: do no forget half pels */
     v_edge_pos = s->v_edge_pos;
     src_x = av_clip(src_x, -16, s->width);
