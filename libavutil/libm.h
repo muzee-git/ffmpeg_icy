@@ -38,15 +38,15 @@
 #define exp2f(x) ((float)exp2(x))
 #endif /* HAVE_EXP2F */
 
-#if !HAVE_LLRINT
+//#if !HAVE_LLRINT
 #undef llrint
 #define llrint(x) ((long long)rint(x))
-#endif /* HAVE_LLRINT */
+//#endif /* HAVE_LLRINT */
 
-#if !HAVE_LLRINTF
+//#if !HAVE_LLRINTF
 #undef llrintf
 #define llrintf(x) ((long long)rint(x))
-#endif /* HAVE_LLRINT */
+//#endif /* HAVE_LLRINT */
 
 #if !HAVE_LOG2
 #undef log2
