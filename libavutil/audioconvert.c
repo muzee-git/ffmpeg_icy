@@ -60,7 +60,7 @@ static const char *get_channel_name(int channel_id)
 static const struct {
     const char *name;
     int         nb_channels;
-    int64_t     layout;
+    uint64_t     layout;
 } channel_layout_map[] = {
     { "mono",        1,  AV_CH_LAYOUT_MONO },
     { "stereo",      2,  AV_CH_LAYOUT_STEREO },
@@ -72,25 +72,54 @@ static const struct {
     { "5.1(side)",   6,  AV_CH_LAYOUT_5POINT1 },
     { "7.1",         8,  AV_CH_LAYOUT_7POINT1 },
     { "7.1(wide)",   8,  AV_CH_LAYOUT_7POINT1_WIDE },
-    { "5.1+downmix", 8,  AV_CH_LAYOUT_5POINT1|AV_CH_LAYOUT_STEREO_DOWNMIX, },
-    { "7.1+downmix", 10, AV_CH_LAYOUT_7POINT1|AV_CH_LAYOUT_STEREO_DOWNMIX, },
+    { "downmix",     2,  AV_CH_LAYOUT_STEREO_DOWNMIX, },
     { 0 }
 };
 
-int64_t av_get_channel_layout(const char *name)
+static uint64_t get_channel_layout_single(const char *name, int name_len)
 {
-    int i = 0;
-    do {
-        if (!strcmp(channel_layout_map[i].name, name))
-            return channel_layout_map[i].layout;
-        i++;
-    } while (channel_layout_map[i].name);
+    int i;
+    char *end;
+    int64_t layout;
 
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map) - 1; i++) {
+        if (strlen(channel_layout_map[i].name) == name_len &&
+            !memcmp(channel_layout_map[i].name, name, name_len))
+            return channel_layout_map[i].layout;
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_names); i++)
+        if (channel_names[i] &&
+            strlen(channel_names[i]) == name_len &&
+            !memcmp(channel_names[i], name, name_len))
+            return (int64_t)1 << i;
+    i = strtol(name, &end, 10);
+    if (end - name == name_len ||
+        (end + 1 - name == name_len && *end  == 'c'))
+        return av_get_default_channel_layout(i);
+    layout = strtoll(name, &end, 0);
+    if (end - name == name_len)
+        return FFMAX(layout, 0);
     return 0;
 }
 
+uint64_t av_get_channel_layout(const char *name)
+{
+    const char *n, *e;
+    const char *name_end = name + strlen(name);
+    int64_t layout = 0, layout_single;
+
+    for (n = name; n < name_end; n = e + 1) {
+        for (e = n; e < name_end && *e != '+' && *e != '|'; e++);
+        layout_single = get_channel_layout_single(n, e - n);
+        if (!layout_single)
+            return 0;
+        layout |= layout_single;
+    }
+    return layout;
+}
+
 void av_get_channel_layout_string(char *buf, int buf_size,
-                                  int nb_channels, int64_t channel_layout)
+                                  int nb_channels, uint64_t channel_layout)
 {
     int i;
 
@@ -109,7 +138,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
         int i, ch;
         av_strlcat(buf, " (", buf_size);
         for (i = 0, ch = 0; i < 64; i++) {
-            if ((channel_layout & (1L << i))) {
+            if ((channel_layout & (UINT64_C(1) << i))) {
                 const char *name = get_channel_name(i);
                 if (name) {
                     if (ch > 0)
@@ -123,7 +152,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
     }
 }
 
-int av_get_channel_layout_nb_channels(int64_t channel_layout)
+int av_get_channel_layout_nb_channels(uint64_t channel_layout)
 {
     int count;
     uint64_t x = channel_layout;

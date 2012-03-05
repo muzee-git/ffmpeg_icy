@@ -30,16 +30,13 @@
 #undef __GNUC_STDC_INLINE__
 
 #define Picture QuickdrawPicture
-
-#include <pthread.h>
-#include "avcodec.h"
 #include <VideoDecodeAcceleration/VDADecoder.h>
+#undef Picture
 
 /**
  *  This structure is used to store a decoded frame information and data.
  */
-typedef struct
-{
+typedef struct {
     /**
     * The PTS of the frame.
     *
@@ -73,7 +70,6 @@ typedef struct
  * The application must make it available as AVCodecContext.hwaccel_context.
  */
 struct vda_context {
-
     /**
     * VDA decoder object.
     *
@@ -121,6 +117,38 @@ struct vda_context {
     * - decoding: Set/Unset by user.
     */
     int                 format;
+
+    /**
+    * The pixel format for output image buffers.
+    *
+    * - encoding: unused
+    * - decoding: Set/Unset by user.
+    */
+    OSType              cv_pix_fmt_type;
+
+    /**
+    * The current bitstream buffer.
+    *
+    * - encoding: unused
+    * - decoding: Set/Unset by libavcodec.
+    */
+    uint8_t             *bitstream;
+
+    /**
+    * The current size of the bitstream.
+    *
+    * - encoding: unused
+    * - decoding: Set/Unset by libavcodec.
+    */
+    int                 bitstream_size;
+
+    /**
+    * The reference size used for fast reallocation.
+    *
+    * - encoding: unused
+    * - decoding: Set/Unset by libavcodec.
+    */
+    int                 ref_size;
 };
 
 /** Creates the video decoder. */

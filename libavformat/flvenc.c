@@ -202,7 +202,7 @@ static int flv_write_header(AVFormatContext *s)
             if(get_audio_flags(enc)<0)
                 return -1;
         }
-        av_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
+        avpriv_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
 
         sc = av_mallocz(sizeof(FLVStreamContext));
         if (!sc)
@@ -432,7 +432,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         assert(enc->codec_type == AVMEDIA_TYPE_DATA);
         avio_w8(pb, FLV_TAG_TYPE_META);
         flags_size = 0;
-        flags = NULL;
+        flags = 0;
     }
 
     if (enc->codec_id == CODEC_ID_H264 || enc->codec_id == CODEC_ID_MPEG4) {

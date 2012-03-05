@@ -409,14 +409,14 @@ static const ID3v2EMFunc *get_extra_meta_func(const char *tag, int isv34)
 {
     int i = 0;
     while (id3v2_extra_meta_funcs[i].tag3) {
-        if (!memcmp(tag,
+        if (tag && !memcmp(tag,
                     (isv34 ? id3v2_extra_meta_funcs[i].tag4 :
                              id3v2_extra_meta_funcs[i].tag3),
                     (isv34 ? 4 : 3)))
             return &id3v2_extra_meta_funcs[i];
         i++;
     }
-    return &id3v2_extra_meta_funcs[i];
+    return NULL;
 }
 
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags, ID3v2ExtraMeta **extra_meta)
@@ -456,8 +456,22 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
 
     unsync = flags & 0x80;
 
-    if (isv34 && flags & 0x40) /* Extended header present, just skip over it */
-        avio_skip(s->pb, get_size(s->pb, 4));
+    /* Extended header present, just skip over it */
+    if (isv34 && flags & 0x40) {
+        int size = get_size(s->pb, 4);
+        if (size < 6) {
+            reason = "extended header too short.";
+            goto error;
+        }
+        len -= size;
+        if (len < 0) {
+            reason = "extended header too long.";
+            goto error;
+        }
+        /* already seeked past size, skip the reset */
+        size -= 4;
+        avio_skip(s->pb, size);
+    }
 
     while (len >= taghdrlen) {
         unsigned int tflags = 0;

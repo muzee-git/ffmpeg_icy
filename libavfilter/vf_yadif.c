@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2010 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (C) 2006-2011 Michael Niedermayer <michaelni@gmx.at>
  *               2010      James Darnley <james.darnley@gmail.com>
  *
  * FFmpeg is free software; you can redistribute it and/or modify
@@ -405,7 +405,8 @@ AVFilter avfilter_vf_yadif = {
                                     .start_frame      = start_frame,
                                     .get_video_buffer = get_video_buffer,
                                     .draw_slice       = null_draw_slice,
-                                    .end_frame        = end_frame, },
+                                    .end_frame        = end_frame,
+                                    .rej_perms        = AV_PERM_REUSE2, },
                                   { .name = NULL}},
 
     .outputs   = (const AVFilterPad[]) {{ .name       = "default",

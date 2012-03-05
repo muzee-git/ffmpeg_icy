@@ -94,6 +94,7 @@ Configuration options:
   --disable-avfilter       disable video filter support [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
+  --disable-os2threads     disable OS/2 threads [auto]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --enable-gray            enable full grayscale support (slower color)
@@ -109,6 +110,7 @@ Configuration options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --enable-vaapi           enable VAAPI code [autodetect]
+  --enable-vda             enable VDA code [autodetect]
   --enable-vdpau           enable VDPAU code [autodetect]
   --disable-dxva2          disable DXVA2 code
   --disable-vda            disable VDA code
@@ -163,10 +165,11 @@ Configuration options:
 External library support:
   --enable-avisynth        enable reading of AVISynth script files [no]
   --enable-bzlib           enable bzlib [autodetect]
-  --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-frei0r          enable frei0r video filtering
-  --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-gnutls          enable gnutls [no]
+  --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
+  --enable-libass          enable libass subtitles rendering [no]
+  --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -181,7 +184,8 @@ External library support:
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
                            native (de)muxer exists [no]
-  --enable-libopenjpeg     enable JPEG 2000 decoding via OpenJPEG [no]
+  --enable-libopenjpeg     enable JPEG 2000 encoding/decoding via OpenJPEG [no]
+  --enable-libpulse        enable Pulseaudio input via libpulse [no]
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac support via libschroedinger [no]
   --enable-libspeex        enable Speex support via libspeex [no]
@@ -256,6 +260,7 @@ Advanced options (experts only):
   --optflags               override optimization-related compiler flags
 
 Developer options (useful when working on FFmpeg itself):
+  --enable-coverage        build with test coverage instrumentation
   --disable-debug          disable debugging symbols
   --enable-debug=LEVEL     set the debug level [$debuglevel]
   --disable-optimizations  disable compiler optimizations
@@ -1005,6 +1010,7 @@ CONFIG_LIST="
     hardcoded_tables
     huffman
     libaacplus
+    libass
     libcdio
     libcelt
     libdc1394
@@ -1069,6 +1075,7 @@ CONFIG_LIST="
 THREADS_LIST='
     pthreads
     w32threads
+    os2threads
 '
 
 ARCH_LIST='
@@ -1236,6 +1243,7 @@ CMDLINE_SELECT="
     $CONFIG_LIST
     $THREADS_LIST
     asm
+    coverage
     cross_compile
     debug
     extra_warnings
@@ -1385,8 +1393,8 @@ h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi h264_decoder"
-h264_vda_hwaccel_deps="VideoDecodeAcceleration_VDADecoder_h"
-h264_vda_hwaccel_select="vda"
+h264_vda_hwaccel_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
+h264_vda_hwaccel_select="vda h264_decoder"
 h264_vdpau_decoder_select="vdpau h264_decoder"
 imc_decoder_select="fft mdct sinewin"
 jpegls_decoder_select="golomb"
@@ -1494,6 +1502,7 @@ zmbv_encoder_select="zlib"
 
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 vaapi_deps="va_va_h"
+vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers
@@ -1515,6 +1524,7 @@ libopencore_amrnb_decoder_deps="libopencore_amrnb"
 libopencore_amrnb_encoder_deps="libopencore_amrnb"
 libopencore_amrwb_decoder_deps="libopencore_amrwb"
 libopenjpeg_decoder_deps="libopenjpeg"
+libopenjpeg_encoder_deps="libopenjpeg"
 libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
 libspeex_decoder_deps="libspeex"
@@ -1527,6 +1537,7 @@ libvorbis_encoder_deps="libvorbis"
 libvpx_decoder_deps="libvpx"
 libvpx_encoder_deps="libvpx"
 libx264_encoder_deps="libx264"
+libx264rgb_encoder_deps="libx264"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 libutvideo_decoder_deps="libutvideo gpl"
@@ -1591,6 +1602,8 @@ x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 
 # protocols
 gopher_protocol_deps="network"
+httpproxy_protocol_deps="network"
+httpproxy_protocol_select="tcp_protocol"
 http_protocol_deps="network"
 http_protocol_select="tcp_protocol"
 https_protocol_select="tls_protocol"
@@ -1605,6 +1618,7 @@ udp_protocol_deps="network"
 
 # filters
 amovie_filter_deps="avcodec avformat"
+ass_filter_deps="libass"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
@@ -1669,7 +1683,7 @@ test_deps _encoder _decoder                                             \
     asv2                                                                \
     bmp                                                                 \
     dnxhd="dnxhd_1080i dnxhd_720p dnxhd_720p_rd"                        \
-    dvvideo="dv dv50"                                                   \
+    dvvideo="dv dv_411 dv50"                                            \
     ffv1                                                                \
     flac                                                                \
     flashsv                                                             \
@@ -1682,8 +1696,10 @@ test_deps _encoder _decoder                                             \
     mjpeg="jpg mjpeg ljpeg"                                             \
     mp2                                                                 \
     mpeg1video="mpeg mpeg1b"                                            \
-    mpeg2video="mpeg2 mpeg2thread"                                      \
-    mpeg4="mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc"                 \
+    mpeg2video="mpeg2 mpeg2_422 mpeg2_idct_int mpeg2_ilace mpeg2_ivlc_qprd" \
+    mpeg2video="mpeg2thread mpeg2thread_ilace"                          \
+    mpeg4="mpeg4 mpeg4_adap mpeg4_qpel mpeg4_qprd mpeg4adv mpeg4nr"     \
+    mpeg4="mpeg4thread error rc"                                        \
     msmpeg4v3=msmpeg4                                                   \
     msmpeg4v2                                                           \
     pbm=pbmpipe                                                         \
@@ -2578,7 +2594,6 @@ case $target_os in
             disable network
         else
             target_os=mingw32
-            enable_weak w32threads
         fi
         LIBTARGET=i386
         if enabled x86_64; then
@@ -2656,6 +2671,7 @@ case $target_os in
           emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
         SLIB_INSTALL_EXTRA_LIB='$(LIBPREF)$(NAME)_dll.a $(LIBPREF)$(NAME)_dll.lib'
         enable dos_paths
+        enable_weak os2threads
         ;;
     gnu/kfreebsd)
         add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
@@ -2989,13 +3005,17 @@ disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 if ! disabled vda; then
     if check_header VideoDecodeAcceleration/VDADecoder.h; then
         enable vda
-        add_ldflags -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
+        add_extralibs -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
     fi
+fi
+
+if ! disabled w32threads && ! enabled pthreads; then
+    check_func _beginthreadex && enable w32threads
 fi
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
-if ! disabled pthreads && ! enabled w32threads; then
+if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     enable pthreads
     if check_func pthread_create; then
         :
@@ -3040,11 +3060,12 @@ check_mathfunc truncf
 
 # these are off by default, so fail if requested and not available
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
-enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
-enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
+enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
+enabled libass     && require_pkg_config libass ass/ass.h ass_library_init
+enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
+enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
     "dirac_decoder_init dirac_encoder_init"
@@ -3175,6 +3196,7 @@ check_cpp_condition \
 fi
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
+enabled coverage && add_cflags "-fprofile-arcs -ftest-coverage" && add_ldflags "-fprofile-arcs -ftest-coverage"
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
@@ -3378,14 +3400,15 @@ echo "libdxva2 enabled          ${dxva2-no}"
 echo "libva enabled             ${vaapi-no}"
 echo "libvdpau enabled          ${vdpau-no}"
 echo "AVISynth enabled          ${avisynth-no}"
-echo "libcelt enabled           ${libcelt-no}"
 echo "frei0r enabled            ${frei0r-no}"
 echo "gnutls enabled            ${gnutls-no}"
+echo "libaacplus enabled        ${libaacplus-no}"
+echo "libass enabled            ${libass-no}"
 echo "libcdio support           ${libcdio-no}"
+echo "libcelt enabled           ${libcelt-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"
-echo "libaacplus enabled        ${libaacplus-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libmodplug enabled        ${libmodplug-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"

@@ -20,16 +20,17 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
-static int timecode_v2_write_header(AVFormatContext *s)
+static int write_header(AVFormatContext *s)
 {
     static const char *header = "# timecode format v2\n";
     put_buffer(s->pb, header, strlen(header));
-    av_set_pts_info(s->streams[0], 64, 1, 1000);
+    avpriv_set_pts_info(s->streams[0], 64, 1, 1000);
     return 0;
 }
 
-static int timecode_v2_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     char buf[256];
     if (pkt->stream_index)
@@ -40,14 +41,14 @@ static int timecode_v2_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_timecode_v2_muxer = {
-    "timecode_v2",
-    NULL_IF_CONFIG_SMALL("timecode format v2"),
+AVOutputFormat ff_mkvtimestamp_v2_muxer = {
+    "mkvtimestamp_v2",
+    NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
     NULL,
     "",
     0,
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
-    timecode_v2_write_header,
-    timecode_v2_write_packet,
+    write_header,
+    write_packet,
 };

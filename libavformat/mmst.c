@@ -29,6 +29,7 @@
  */
 
 #include "avformat.h"
+#include "mms_plus.h"
 #include "mms.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -437,14 +438,33 @@ static int send_startup_packet(MMSTContext *mmst)
 static int send_stream_selection_request(MMSTContext *mmst)
 {
     int i;
+    int select_index_enable;
+
+    av_log(NULL, AV_LOG_WARNING,"select video index: %d\n", mms_plus_video_index());
+    av_log(NULL, AV_LOG_WARNING,"select audio index: %d\n", mms_plus_audio_index());
+
+    select_index_enable = mms_plus_video_index() >=0 && mms_plus_audio_index() >= 0;
+    av_log(NULL, AV_LOG_INFO,"enable stream selection: %d\n", select_index_enable);
     MMSContext *mms = &mmst->mms;
     //  send the streams we want back...
     start_command_packet(mmst, CS_PKT_STREAM_ID_REQUEST);
     bytestream_put_le32(&mms->write_out_ptr, mms->stream_num);         // stream nums
-    for(i= 0; i<mms->stream_num; i++) {
+
+    if(select_index_enable) {
         bytestream_put_le16(&mms->write_out_ptr, 0xffff);              // flags
-        bytestream_put_le16(&mms->write_out_ptr, mms->streams[i].id);  // stream id
+        bytestream_put_le16(&mms->write_out_ptr, mms->streams[mms_plus_video_index()].id);  // stream id
         bytestream_put_le16(&mms->write_out_ptr, 0);                   // selection
+
+        bytestream_put_le16(&mms->write_out_ptr, 0xffff);              // flags
+        bytestream_put_le16(&mms->write_out_ptr, mms->streams[mms_plus_audio_index()].id);  // stream id
+        bytestream_put_le16(&mms->write_out_ptr, 0);                   // selection
+    }
+    else {
+        for(i= 0; i<mms->stream_num; i++) {
+            bytestream_put_le16(&mms->write_out_ptr, 0xffff);              // flags
+            bytestream_put_le16(&mms->write_out_ptr, mms->streams[i].id);  // stream id
+            bytestream_put_le16(&mms->write_out_ptr, 0);                   // selection
+        }
     }
     return send_command_packet(mmst);
 }
@@ -470,7 +490,6 @@ static int mms_close(URLContext *h)
     /* free all separately allocated pointers in mms */
     av_free(mms->streams);
     av_free(mms->asf_header);
-    av_freep(&h->priv_data);
 
     return 0;
 }
@@ -502,15 +521,12 @@ static void clear_stream_buffers(MMSContext *mms)
 
 static int mms_open(URLContext *h, const char *uri, int flags)
 {
-    MMSTContext *mmst;
+    MMSTContext *mmst = h->priv_data;
     MMSContext *mms;
     int port, err;
     char tcpname[256];
 
     h->is_streamed = 1;
-    mmst = h->priv_data = av_mallocz(sizeof(MMSTContext));
-    if (!h->priv_data)
-        return AVERROR(ENOMEM);
     mms = &mmst->mms;
 
     // only for MMS over TCP, so set proto = NULL
@@ -523,7 +539,8 @@ static int mms_open(URLContext *h, const char *uri, int flags)
 
     // establish tcp connection.
     ff_url_join(tcpname, sizeof(tcpname), "tcp", NULL, mmst->host, port, NULL);
-    err = ffurl_open(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE);
+    err = ffurl_open(&mms->mms_hd, tcpname, AVIO_FLAG_READ_WRITE,
+                     &h->interrupt_callback, NULL);
     if (err)
         goto fail;
 
@@ -623,8 +640,9 @@ static int mms_read(URLContext *h, uint8_t *buf, int size)
 }
 
 URLProtocol ff_mmst_protocol = {
-    .name      = "mmst",
-    .url_open  = mms_open,
-    .url_read  = mms_read,
-    .url_close = mms_close,
+    .name           = "mmst",
+    .url_open       = mms_open,
+    .url_read       = mms_read,
+    .url_close      = mms_close,
+    .priv_data_size = sizeof(MMSTContext),
 };

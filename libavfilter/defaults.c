@@ -63,7 +63,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
         pool = link->pool = av_mallocz(sizeof(AVFilterPool));
 
     // align: +2 is needed for swscaler, +16 to be SIMD-friendly
-    if ((i = av_image_alloc(data, linesize, w, h, link->format, 16)) < 0)
+    if ((i = av_image_alloc(data, linesize, w, h, link->format, 32)) < 0)
         return NULL;
 
     picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
@@ -91,7 +91,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     /* Calculate total buffer size, round to multiple of 16 to be SIMD friendly */
     if (av_samples_alloc(data, linesize,
                          nb_channels, nb_samples, link->format,
-                         link->planar, 16) < 0)
+                         16) < 0)
         return NULL;
 
     samplesref =

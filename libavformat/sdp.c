@@ -402,7 +402,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, config ? config : "");
             break;
         case CODEC_ID_AAC:
-            if (fmt && fmt->oformat->priv_class &&
+            if (fmt && fmt->oformat && fmt->oformat->priv_class &&
                 av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
                 config = latm_context2config(c);
                 if (!config)
@@ -517,6 +517,14 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                          payload_type,
                                          8000, c->channels);
             break;
+        case CODEC_ID_ADPCM_G726: {
+            if (payload_type >= RTP_PT_PRIVATE)
+                av_strlcatf(buff, size, "a=rtpmap:%d G726-%d/%d\r\n",
+                                         payload_type,
+                                         c->bits_per_coded_sample*8,
+                                         c->sample_rate);
+            break;
+        }
         default:
             /* Nothing special to do here... */
             break;

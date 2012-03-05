@@ -29,6 +29,7 @@ OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 OBJS-$(CONFIG_ARESAMPLE_FILTER)              += af_aresample.o
 OBJS-$(CONFIG_ASHOWINFO_FILTER)              += af_ashowinfo.o
 OBJS-$(CONFIG_EARWAX_FILTER)                 += af_earwax.o
+OBJS-$(CONFIG_PAN_FILTER)                    += af_pan.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
 
 OBJS-$(CONFIG_ABUFFER_FILTER)                += asrc_abuffer.o
@@ -39,6 +40,7 @@ OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += sink_buffer.o
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 
+OBJS-$(CONFIG_ASS_FILTER)                    += vf_ass.o
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
 OBJS-$(CONFIG_BOXBLUR_FILTER)                += vf_boxblur.o
 OBJS-$(CONFIG_COPY_FILTER)                   += vf_copy.o
@@ -82,8 +84,11 @@ OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 
 OBJS-$(CONFIG_BUFFER_FILTER)                 += vsrc_buffer.o
+OBJS-$(CONFIG_CELLAUTO_FILTER)               += vsrc_cellauto.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_color.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
+OBJS-$(CONFIG_LIFE_FILTER)                   += vsrc_life.o
+OBJS-$(CONFIG_MANDELBROT_FILTER)             += vsrc_mandelbrot.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += src_movie.o
 OBJS-$(CONFIG_MPTESTSRC_FILTER)              += vsrc_mptestsrc.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_testsrc.o

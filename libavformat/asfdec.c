@@ -28,6 +28,7 @@
 #include "libavutil/mathematics.h"
 #include "libavcodec/mpegaudio.h"
 #include "avformat.h"
+#include "internal.h"
 #include "avio_internal.h"
 #include "riff.h"
 #include "asf.h"
@@ -166,7 +167,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     if (type == 0) {         // UTF16-LE
         avio_get_str16le(s->pb, len, value, 2*len + 1);
     } else if (type == -1) { // ASCII
-        get_buffer(s->pb, value, len);
+        avio_read(s->pb, value, len);
         value[len]=0;
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
@@ -227,7 +228,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
+    avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     asf_st = av_mallocz(sizeof(ASFStream));
     if (!asf_st)
         return AVERROR(ENOMEM);
@@ -510,35 +511,50 @@ static int asf_read_language_list(AVFormatContext *s, int64_t size)
     return 0;
 }
 
+
 static int asf_read_metadata(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
     int n, stream_num, name_len, value_len, value_num;
+    int value_type;
     int ret, i;
     n = avio_rl16(pb);
-
+    
     for(i=0;i<n;i++) {
         char name[1024];
-
+        
         avio_rl16(pb); //lang_list_index
         stream_num= avio_rl16(pb);
         name_len=   avio_rl16(pb);
-        avio_skip(pb, 2); /* value_type */
-        value_len=  avio_rl32(pb);
 
+        /* 0 unicode, 1 bytes, 2 bool */
+        value_type = avio_rl16(pb); 
+        value_len=  avio_rl32(pb);
+        
         if ((ret = avio_get_str16le(pb, name_len, name, sizeof(name))) < name_len)
             avio_skip(pb, name_len - ret);
-        //av_log(s, AV_LOG_ERROR, "%d %d %d %d %d <%s>\n", i, stream_num, name_len, value_type, value_len, name);
-        value_num= avio_rl16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
-        avio_skip(pb, value_len - 2);
-
+        
+        if(value_type != 0)
+        {
+            value_num= avio_rl16(pb);//we should use get_value() here but it does not work 2 is le16 here but le32 elsewhere
+            avio_skip(pb, value_len - 2);
+        }
+        else
+        {
+            char value_str[1024];
+            avio_get_str16le(pb, value_len, value_str, sizeof(value_str));
+            av_log(s, AV_LOG_WARNING, "%s=%s\n", name, value_str);
+        }
+        
         if(stream_num<128){
             if     (!strcmp(name, "AspectRatioX")) asf->dar[stream_num].num= value_num;
             else if(!strcmp(name, "AspectRatioY")) asf->dar[stream_num].den= value_num;
         }
+        
+        
     }
-
+    
     return 0;
 }
 
@@ -812,7 +828,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     ASFContext *asf = s->priv_data;
     int rsize = 1;
     int num = avio_r8(pb);
-    int64_t ts0;
+    int64_t ts0, ts1 av_unused;
 
     asf->packet_segments--;
     asf->packet_key_frame = num >> 7;
@@ -839,7 +855,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
 //            av_log(s, AV_LOG_DEBUG, "\n");
             avio_skip(pb, 10);
             ts0= avio_rl64(pb);
-            avio_skip(pb, 8);;
+            ts1= avio_rl64(pb);
             avio_skip(pb, 12);
             avio_rl32(pb);
             avio_skip(pb, asf->packet_replic_size - 8 - 38 - 4);
@@ -1181,7 +1197,7 @@ static int64_t asf_read_pts(AVFormatContext *s, int stream_index, int64_t *ppos,
             return AV_NOPTS_VALUE;
         }
 
-        pts= pkt->pts;
+        pts = pkt->dts;
 
         av_free_packet(pkt);
         if(pkt->flags&AV_PKT_FLAG_KEY){

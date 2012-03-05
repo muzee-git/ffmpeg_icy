@@ -27,6 +27,13 @@
 #include <errno.h>
 #include "avutil.h"
 
+/**
+ * @addtogroup lavu_error
+ *
+ * @{
+ */
+
+
 /* error handling */
 #if EDOM > 0
 #define AVERROR(e) (-(e))   ///< Returns a negative error code from a POSIX error code, to return from library functions.
@@ -38,6 +45,7 @@
 #endif
 
 #define AVERROR_BSF_NOT_FOUND      (-MKTAG(0xF8,'B','S','F')) ///< Bitstream filter not found
+#define AVERROR_BUG                (-MKTAG( 'B','U','G','!')) ///< Internal bug
 #define AVERROR_DECODER_NOT_FOUND  (-MKTAG(0xF8,'D','E','C')) ///< Decoder not found
 #define AVERROR_DEMUXER_NOT_FOUND  (-MKTAG(0xF8,'D','E','M')) ///< Demuxer not found
 #define AVERROR_ENCODER_NOT_FOUND  (-MKTAG(0xF8,'E','N','C')) ///< Encoder not found
@@ -64,5 +72,9 @@
  * cannot be found
  */
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_ERROR_H */

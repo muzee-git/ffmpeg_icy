@@ -44,6 +44,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avassert.h"
@@ -100,6 +101,10 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_RGBA]        = { 1 , 1 },
     [PIX_FMT_ABGR]        = { 1 , 1 },
     [PIX_FMT_BGRA]        = { 1 , 1 },
+    [PIX_FMT_0RGB]        = { 1 , 1 },
+    [PIX_FMT_RGB0]        = { 1 , 1 },
+    [PIX_FMT_0BGR]        = { 1 , 1 },
+    [PIX_FMT_BGR0]        = { 1 , 1 },
     [PIX_FMT_GRAY16BE]    = { 1 , 1 },
     [PIX_FMT_GRAY16LE]    = { 1 , 1 },
     [PIX_FMT_YUV440P]     = { 1 , 1 },
@@ -145,6 +150,13 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV444P10BE] = { 1 , 1 },
     [PIX_FMT_YUV444P10LE] = { 1 , 1 },
     [PIX_FMT_GBR24P]      = { 1 , 0 },
+    [PIX_FMT_GBRP]        = { 1 , 0 },
+    [PIX_FMT_GBRP9LE]     = { 1 , 0 },
+    [PIX_FMT_GBRP9BE]     = { 1 , 0 },
+    [PIX_FMT_GBRP10LE]    = { 1 , 0 },
+    [PIX_FMT_GBRP10BE]    = { 1 , 0 },
+    [PIX_FMT_GBRP16LE]    = { 1 , 0 },
+    [PIX_FMT_GBRP16BE]    = { 1 , 0 },
 };
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
@@ -735,6 +747,10 @@ static int handle_jpeg(enum PixelFormat *format)
     case PIX_FMT_YUVJ422P: *format = PIX_FMT_YUV422P; return 1;
     case PIX_FMT_YUVJ444P: *format = PIX_FMT_YUV444P; return 1;
     case PIX_FMT_YUVJ440P: *format = PIX_FMT_YUV440P; return 1;
+    case PIX_FMT_0BGR    : *format = PIX_FMT_ABGR   ; return 0;
+    case PIX_FMT_BGR0    : *format = PIX_FMT_BGRA   ; return 0;
+    case PIX_FMT_0RGB    : *format = PIX_FMT_ARGB   ; return 0;
+    case PIX_FMT_RGB0    : *format = PIX_FMT_RGBA   ; return 0;
     default:                                          return 0;
     }
 }
@@ -770,6 +786,15 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     if (!rgb15to16) sws_rgb2rgb_init();
 
     unscaled = (srcW == dstW && srcH == dstH);
+
+    handle_jpeg(&srcFormat);
+    handle_jpeg(&dstFormat);
+
+    if(srcFormat!=c->srcFormat || dstFormat!=c->dstFormat){
+        av_log(c, AV_LOG_WARNING, "deprecated pixel format used, make sure you did set range correctly\n");
+        c->srcFormat= srcFormat;
+        c->dstFormat= dstFormat;
+    }
 
     if (!sws_isSupportedInput(srcFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n", av_get_pix_fmt_name(srcFormat));
@@ -929,8 +954,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilterPos, (c->chrDstW/2/4+8)*sizeof(int32_t), fail);
 
-            initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->hLumFilter, c->hLumFilterPos, 8);
-            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->hChrFilter, c->hChrFilterPos, 4);
+            initMMX2HScaler(      dstW, c->lumXInc, c->lumMmx2FilterCode, c->hLumFilter, (uint32_t*)c->hLumFilterPos, 8);
+            initMMX2HScaler(c->chrDstW, c->chrXInc, c->chrMmx2FilterCode, c->hChrFilter, (uint32_t*)c->hChrFilterPos, 4);
 
 #ifdef MAP_ANONYMOUS
             mprotect(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize, PROT_EXEC | PROT_READ);

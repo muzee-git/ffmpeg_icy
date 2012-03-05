@@ -92,7 +92,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     switch(ihsize){
-    case  40: // windib v3
+    case  40: // windib
+    case  56: // windib v3
     case  64: // OS/2 v2
     case 108: // windib v4
     case 124: // windib v5
@@ -115,7 +116,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     depth = bytestream_get_le16(&buf);
 
-    if(ihsize == 40)
+    if(ihsize == 40 || ihsize == 64 || ihsize == 56)
         comp = bytestream_get_le32(&buf);
     else
         comp = BMP_RGB;
@@ -154,7 +155,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             rgb[2] = 0;
         }
 
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = PIX_FMT_BGRA;
         break;
     case 24:
         avctx->pix_fmt = PIX_FMT_BGR24;
@@ -171,16 +172,14 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         else
             avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
+    case 1:
     case 4:
         if(hsize - ihsize - 14 > 0){
             avctx->pix_fmt = PIX_FMT_PAL8;
         }else{
-            av_log(avctx, AV_LOG_ERROR, "Unknown palette for 16-colour BMP\n");
+            av_log(avctx, AV_LOG_ERROR, "Unknown palette for %d-colour BMP\n", 1<<depth);
             return -1;
         }
-        break;
-    case 1:
-        avctx->pix_fmt = PIX_FMT_MONOBLACK;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "depth %d not supported\n", depth);
@@ -265,6 +264,22 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }else{
         switch(depth){
         case 1:
+            for (i = 0; i < avctx->height; i++) {
+                int j;
+                for (j = 0; j < n; j++) {
+                    ptr[j*8+0] =  buf[j] >> 7;
+                    ptr[j*8+1] = (buf[j] >> 6) & 1;
+                    ptr[j*8+2] = (buf[j] >> 5) & 1;
+                    ptr[j*8+3] = (buf[j] >> 4) & 1;
+                    ptr[j*8+4] = (buf[j] >> 3) & 1;
+                    ptr[j*8+5] = (buf[j] >> 2) & 1;
+                    ptr[j*8+6] = (buf[j] >> 1) & 1;
+                    ptr[j*8+7] =  buf[j]       & 1;
+                }
+                buf += n;
+                ptr += linesize;
+            }
+            break;
         case 8:
         case 24:
             for(i = 0; i < avctx->height; i++){
@@ -305,7 +320,13 @@ static int bmp_decode_frame(AVCodecContext *avctx,
                     dst[0] = src[rgb[2]];
                     dst[1] = src[rgb[1]];
                     dst[2] = src[rgb[0]];
-                    dst += 3;
+/* The Microsoft documentation states:
+ * "The high byte in each DWORD is not used."
+ * Both GIMP and ImageMagick store the alpha transparency value
+ * in the high byte for 32bit bmp files.
+ */
+                    dst[3] = src[3];
+                    dst += 4;
                     src += 4;
                 }
 

@@ -21,10 +21,16 @@
 #ifndef AVFORMAT_VERSION_H
 #define AVFORMAT_VERSION_H
 
+/**
+ * @file
+ * @ingroup libavf
+ * Libavformat version macros
+ */
+
 #include "libavutil/avutil.h"
 
 #define LIBAVFORMAT_VERSION_MAJOR 53
-#define LIBAVFORMAT_VERSION_MINOR 20
+#define LIBAVFORMAT_VERSION_MINOR 24
 #define LIBAVFORMAT_VERSION_MICRO  0
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -112,6 +118,12 @@
 #endif
 #ifndef FF_API_REORDER_PRIVATE
 #define FF_API_REORDER_PRIVATE         (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
+#ifndef FF_API_OLD_INTERRUPT_CB
+#define FF_API_OLD_INTERRUPT_CB        (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
+#ifndef FF_API_SET_PTS_INFO
+#define FF_API_SET_PTS_INFO            (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
 
 #endif /* AVFORMAT_VERSION_H */

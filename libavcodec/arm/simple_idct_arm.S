@@ -1,5 +1,4 @@
 /*
- * simple_idct_arm.S
  * Copyright (C) 2002 Frederic 'dilb' Boulay
  *
  * Author: Frederic Boulay <dilb@handhelds.org>
@@ -53,8 +52,6 @@
 #define ROW_SHIFTED_1 1024 /* 1<< (ROW_SHIFT-1) */
 #define COL_SHIFTED_1 524288 /* 1<< (COL_SHIFT-1) */
 
-
-        .text
 
 function ff_simple_idct_arm, export=1
         @@ void simple_idct_arm(int16_t *block)

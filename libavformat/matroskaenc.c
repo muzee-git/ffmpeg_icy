@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "isom.h"
 #include "matroska.h"
@@ -447,7 +448,8 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
 {
     MPEG4AudioConfig mp4ac;
 
-    if (avpriv_mpeg4audio_get_config(&mp4ac, codec->extradata, codec->extradata_size) < 0) {
+    if (avpriv_mpeg4audio_get_config(&mp4ac, codec->extradata,
+                                     codec->extradata_size * 8, 1) < 0) {
         av_log(s, AV_LOG_WARNING, "Error parsing AAC extradata, unable to determine samplerate.\n");
         return;
     }
@@ -672,7 +674,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         end_ebml_master(pb, track);
 
         // ms precision is the de-facto standard timescale for mkv files
-        av_set_pts_info(st, 64, 1, 1000);
+        avpriv_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
     return 0;

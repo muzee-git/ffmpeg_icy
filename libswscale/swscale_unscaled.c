@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2001-2003 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (C) 2001-2011 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
  *
@@ -763,7 +763,7 @@ static void reset_ptr(const uint8_t* src[], int format)
 {
     if(!isALPHA(format))
         src[3]=NULL;
-    if(!isPlanar(format)) {
+    if (!isPlanar(format)) {
         src[3]=src[2]=NULL;
 
         if (!usePal(format))
@@ -771,7 +771,7 @@ static void reset_ptr(const uint8_t* src[], int format)
     }
 }
 
-static int check_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt,
+static int check_image_pointers(const uint8_t * const data[4], enum PixelFormat pix_fmt,
                                 const int linesizes[4])
 {
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
@@ -790,7 +790,7 @@ static int check_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt,
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
  */
-int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
+int attribute_align_arg sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
               const int srcStride[], int srcSliceY, int srcSliceH,
               uint8_t* const dst[], const int dstStride[])
 {
@@ -806,7 +806,7 @@ int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
         av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
         return 0;
     }
-    if (!check_image_pointers(dst, c->dstFormat, dstStride)) {
+    if (!check_image_pointers((const uint8_t* const*)dst, c->dstFormat, dstStride)) {
         av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
         return 0;
     }
@@ -912,7 +912,7 @@ int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
         dst2[3] += ( c->dstH                      -1)*dstStride[3];
 
         reset_ptr(src2, c->srcFormat);
-        reset_ptr((const uint8_t**)dst2, c->dstFormat);
+        reset_ptr((void*)dst2, c->dstFormat);
 
         /* reset slice direction at end of frame */
         if (!srcSliceY)

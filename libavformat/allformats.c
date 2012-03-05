@@ -54,6 +54,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (ACT, act);
     REGISTER_DEMUXER  (ADF, adf);
     REGISTER_MUXER    (ADTS, adts);
+    REGISTER_DEMUXER  (ADX, adx);
     REGISTER_DEMUXER  (AEA, aea);
     REGISTER_MUXDEMUX (AIFF, aiff);
     REGISTER_MUXDEMUX (AMR, amr);
@@ -109,6 +110,7 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (H261, h261);
     REGISTER_MUXDEMUX (H263, h263);
     REGISTER_MUXDEMUX (H264, h264);
+    REGISTER_DEMUXER  (ICO, ico);
     REGISTER_DEMUXER  (IDCIN, idcin);
     REGISTER_DEMUXER  (IDF, idf);
     REGISTER_DEMUXER  (IFF, iff);
@@ -219,7 +221,7 @@ void av_register_all(void)
     REGISTER_MUXER    (TGP, tgp);
     REGISTER_DEMUXER  (THP, thp);
     REGISTER_DEMUXER  (TIERTEXSEQ, tiertexseq);
-    REGISTER_MUXER    (TIMECODE_V2, timecode_v2);
+    REGISTER_MUXER    (MKVTIMESTAMP_V2, mkvtimestamp_v2);
     REGISTER_DEMUXER  (TMV, tmv);
     REGISTER_MUXDEMUX (TRUEHD, truehd);
     REGISTER_DEMUXER  (TTA, tta);
@@ -259,7 +261,9 @@ void av_register_all(void)
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
     REGISTER_PROTOCOL (HTTP, http);
+    REGISTER_PROTOCOL (HTTPPROXY, httpproxy);
     REGISTER_PROTOCOL (HTTPS, https);
+    REGISTER_PROTOCOL (SHOUTCAST, shoutcast);
     REGISTER_PROTOCOL (MMSH, mmsh);
     REGISTER_PROTOCOL (MMST, mmst);
     REGISTER_PROTOCOL (MD5,  md5);

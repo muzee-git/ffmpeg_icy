@@ -81,6 +81,12 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
     unsigned char *fli_header = (unsigned char *)avctx->extradata;
     int depth;
 
+    if (avctx->extradata_size != 12 &&
+        avctx->extradata_size != 128) {
+        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12 or 128 bytes\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     s->avctx = avctx;
 
     s->fli_type = AV_RL16(&fli_header[4]); /* Might be overridden if a Magic Carpet FLC */
@@ -90,9 +96,6 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         /* special case for magic carpet FLIs */
         s->fli_type = FLC_MAGIC_CARPET_SYNTHETIC_TYPE_CODE;
         depth = 8;
-    } else if (s->avctx->extradata_size != 128) {
-        av_log(avctx, AV_LOG_ERROR, "Expected extradata of 12 or 128 bytes\n");
-        return -1;
     } else {
         depth = AV_RL16(&fli_header[12]);
     }
@@ -235,7 +238,9 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     r = buf[stream_ptr++] << color_shift;
                     g = buf[stream_ptr++] << color_shift;
                     b = buf[stream_ptr++] << color_shift;
-                    entry = (r << 16) | (g << 8) | b;
+                    entry = 0xFF << 24 | r << 16 | g << 8 | b;
+                    if (color_shift == 2)
+                        entry |= entry >> 6 & 0x30303;
                     if (s->palette[palette_ptr] != entry)
                         s->new_palette = 1;
                     s->palette[palette_ptr++] = entry;
