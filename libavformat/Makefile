@@ -357,6 +357,7 @@ OBJS-$(CONFIG_MMSH_PROTOCOL)             += mms_plus.o
 OBJS-$(CONFIG_MMST_PROTOCOL)             += mms_plus.o
 OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
 OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
+OBJS-$(CONFIG_SHOUTCAST_PROTOCOL)        += shoutcast.o
 
 # external or internal rtmp
 RTMP-OBJS-$(CONFIG_LIBRTMP)               = librtmp.o

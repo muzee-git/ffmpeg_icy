@@ -260,6 +260,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL (CRYPTO, crypto);
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
+    REGISTER_PROTOCOL (SHOUTCAST, shoutcast);
     REGISTER_PROTOCOL (HTTP, http);
     REGISTER_PROTOCOL (HTTPPROXY, httpproxy);
     REGISTER_PROTOCOL (HTTPS, https);
