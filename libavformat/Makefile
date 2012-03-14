@@ -353,6 +353,8 @@ OBJS-$(CONFIG_HTTPPROXY_PROTOCOL)        += http.o httpauth.o
 OBJS-$(CONFIG_HTTPS_PROTOCOL)            += http.o httpauth.o
 OBJS-$(CONFIG_MMSH_PROTOCOL)             += mmsh.o mms.o asf.o
 OBJS-$(CONFIG_MMST_PROTOCOL)             += mmst.o mms.o asf.o
+OBJS-$(CONFIG_MMSH_PROTOCOL)             += mms_plus.o
+OBJS-$(CONFIG_MMST_PROTOCOL)             += mms_plus.o
 OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
 OBJS-$(CONFIG_PIPE_PROTOCOL)             += file.o
 
