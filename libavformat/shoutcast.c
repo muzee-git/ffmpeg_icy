@@ -62,7 +62,15 @@ static int shoutcast_open(URLContext *h, const char *uri, int flags)
     }
 
     int timeout = 50;
+    int no_pipe_set = 1;
     fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+    if(setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &no_pipe_set, sizeof(int)) == 0) {
+        av_log(h, AV_LOG_ERROR, "setsockopt SO_NOSIGPIPE is ok");
+    }
+    else {
+        av_log(h, AV_LOG_ERROR, "setsockopt SO_NOSIGPIPE is not ok");
+    }
+
     fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
     ret = connect(fd, ai->ai_addr, ai->ai_addrlen);
     freeaddrinfo(ai);
