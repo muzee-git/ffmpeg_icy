@@ -29,6 +29,7 @@
 #include <poll.h>
 #endif
 #include <sys/time.h>
+#include <sys/socket.h>
 
 typedef struct TCPContext {
     int fd;
@@ -48,6 +49,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int timeout = 50;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
+    int no_pipe_set = 1;
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
         &port, path, sizeof(path), uri);
@@ -81,6 +83,13 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     fd = socket(cur_ai->ai_family, cur_ai->ai_socktype, cur_ai->ai_protocol);
     if (fd < 0)
         goto fail;
+
+    if(setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &no_pipe_set, sizeof(int)) == 0) {
+        av_log(h, AV_LOG_ERROR, "setsockopt SO_NOSIGPIPE is ok");
+    }
+    else {
+        av_log(h, AV_LOG_ERROR, "setsockopt SO_NOSIGPIPE is not ok");
+    }
 
     if (listen_socket) {
         int fd1;
