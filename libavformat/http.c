@@ -52,6 +52,7 @@ typedef struct {
     char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
     int chunked_post;
+    int enable_seek;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
@@ -61,6 +62,7 @@ typedef struct {
 static const AVOption options[] = {
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+{"seek", "enable seeking using HTTP range feature", OFFSET(enable_seek), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, D},
 {"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC},
 {NULL}
 };
@@ -293,9 +295,9 @@ static int process_line(URLContext *h, char *line, int line_count,
                 if ((slash = strchr(p, '/')) && strlen(slash) > 0)
                     s->filesize = atoll(slash+1);
             }
-            h->is_streamed = 0; /* we _can_ in fact seek */
+            h->is_streamed = !s->enable_seek; /* we _can_ in fact seek */
         } else if (!av_strcasecmp(tag, "Accept-Ranges") && !strncmp(p, "bytes", 5)) {
-            h->is_streamed = 0;
+            h->is_streamed = !s->enable_seek;
         } else if (!av_strcasecmp (tag, "Transfer-Encoding") && !av_strncasecmp(p, "chunked", 7)) {
             s->filesize = -1;
             s->chunksize = 0;
