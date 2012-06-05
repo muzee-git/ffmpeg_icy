@@ -159,7 +159,8 @@ static struct StupidHTTPContext* stupidhttp_open_ctx(URLContext *h, const char *
     int buf_len = 0;
     char line[1024];
     int found_http_body = 0;
-    while(1)
+    int read_zero_limit_count_down = 3;
+    while(read_zero_limit_count_down > 0)
     {
         ret = wait_fd(fd, READABLE, h);
         if(ret <=0)
@@ -171,6 +172,10 @@ static struct StupidHTTPContext* stupidhttp_open_ctx(URLContext *h, const char *
         memset(buf, 0, sizeof(buf));
         buf_len = recv(http_ctx->fd, buf, sizeof(buf) - 1, 0);
         av_log(h, AV_LOG_WARNING, "buf length: %d\n", buf_len);
+        if(buf_len == 0)
+        {
+            read_zero_limit_count_down --;
+        }
         int line_number = 0;
         while(next_offset >= 0)
         {
@@ -256,8 +261,11 @@ static struct StupidHTTPContext* stupidhttp_open_ctx(URLContext *h, const char *
         }
     }
 
-    if(found_http_body)
+    if(found_http_body && read_zero_limit_count_down > 0)
+    {
+        av_log(h, AV_LOG_WARNING, "body found.\n");
         return http_ctx;
+    }
 
     av_log(h, AV_LOG_WARNING, "no body found.\n");
     av_free(http_ctx);
