@@ -1,0 +1,1 @@
+./configure --disable-doc --disable-ffplay --disable-ffserver --disable-muxers --disable-avdevice --disable-postproc --disable-avfilter --disable-bsfs --disable-filters --disable-devices --disable-encoders --disable-asm --disable-bzlib --disable-zlib --disable-vda --prefix=/opt/ffmpeg
