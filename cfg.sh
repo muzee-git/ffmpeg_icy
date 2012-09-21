@@ -4,6 +4,5 @@ PKG_CONFIG_PATH="/opt/rtmpdump/lib/pkgconfig" ./configure --disable-doc \
 --disable-filters \
 --disable-asm \
 --disable-bzlib \
---disable-zlib \
 --enable-librtmp \
 --prefix=/opt/ffmpeg
