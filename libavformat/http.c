@@ -34,7 +34,7 @@
    only a subset of it. */
 
 /* used for protocol handling */
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 4096
 #define MAX_REDIRECTS 8
 
 typedef struct {
